@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>拼写大闯关 · 第六讲词组打地鼠</title>
+  <style>
+    :root {
+      --bg-color: #2b2b2b;
+      --card-bg: #f5f0e6;
+      --primary: #e6a817;
+      --primary-dark: #b87c0e;
+      --correct: #4caf50;
+      --wrong: #f44336;
+      --text-dark: #333;
+      --text-light: #fff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    body {
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at center, #3a3a3a, #1a1a1a);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--text-dark);
+      padding: 15px;
+      overflow: hidden;
+    }
+
+    .game-wrapper {
+      background: #3d2e1e;
+      border-radius: 30px;
+      padding: 20px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.8), inset 0 2px 0 rgba(255,255,255,0.1);
+      max-width: 800px;
+      width: 100%;
+      position: relative;
+    }
+
+    /* 顶部信息栏 */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1e150e;
+      padding: 12px 20px;
+      border-radius: 50px;
+      color: #f0e6d2;
+      margin-bottom: 15px;
+      box-shadow: inset 0 4px 10px rgba(0,0,0,0.6);
+      border: 1px solid #5a4a35;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .level-badge {
+      background: var(--primary);
+      color: #1e150e;
+      padding: 4px 16px;
+      border-radius: 30px;
+      font-weight: 900;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      box-shadow: 0 3px 0 var(--primary-dark);
+    }
+
+    .progress-container {
+      flex: 1;
+      min-width: 150px;
+      height: 16px;
+      background: #0d0a07;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+      margin: 0 15px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ffd700, #ff8c00);
+      border-radius: 10px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px #ffaa00;
+    }
+
+    .stats-mini {
+      display: flex;
+      gap: 15px;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .stats-mini span { display: flex; align-items: center; gap: 5px; }
+
+    /* 游戏主区域 (地鼠洞) */
+    .game-board {
+      background: #6b8c5e; /* 草地绿 */
+      border-radius: 20px;
+      padding: 20px;
+      position: relative;
+      box-shadow: inset 0 10px 20px rgba(0,0,0,0.4), 0 8px 0 #4a5e3e;
+      border: 4px solid #8aac7a;
+      margin-bottom: 15px;
+      min-height: 340px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* 地鼠卡片 */
+    .mole-card {
+      background: var(--card-bg);
+      width: 100%;
+      border-radius: 20px;
+      padding: 25px 20px;
+      text-align: center;
+      box-shadow: 0 10px 0 #b8a88e, 0 15px 25px rgba(0,0,0,0.4);
+      border: 3px solid #fff;
+      transform: translateY(0);
+      transition: transform 0.1s ease;
+      position: relative;
+    }
+
+    .mole-card.animate-pop {
+      animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.9); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    .chinese-text {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #2b1e10;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .hint-text {
+      font-size: 0.95rem;
+      color: #7a6b55;
+      margin-top: 8px;
+      background: #e8dfce;
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* 输入区域 */
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    .spell-input {
+      flex: 1;
+      padding: 16px 20px;
+      font-size: 1.3rem;
+      border: none;
+      border-radius: 12px;
+      background: #fffcf5;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.15);
+      font-family: 'Courier New', monospace;
+      font-weight: 700;
+      color: #2b1e10;
+      outline: none;
+      transition: box-shadow 0.2s;
+      min-width: 0;
+    }
+
+    .spell-input:focus {
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.15), 0 0 0 3px var(--primary);
+    }
+
+    .btn {
+      border: none;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      padding: 0 22px;
+      cursor: pointer;
+      transition: transform 0.05s, box-shadow 0.05s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 4px solid transparent;
+      white-space: nowrap;
+    }
+
+    .btn:active {
+      transform: translateY(2px);
+      border-bottom-width: 2px;
+    }
+
+    .btn-check {
+      background: #ffd166;
+      color: #3d2e1e;
+      border-bottom-color: #d4a017;
+    }
+
+    .btn-skip {
+      background: #e0e0e0;
+      color: #555;
+      border-bottom-color: #b0b0b0;
+    }
+
+    /* 反馈提示 */
+    .feedback-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 4rem;
+      font-weight: 900;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10;
+      text-shadow: 3px 3px 0 #000;
+    }
+
+    .feedback-overlay.show {
+      animation: feedbackPop 0.6s ease-out forwards;
+    }
+
+    @keyframes feedbackPop {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+      30% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+      70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    }
+
+    .feedback-text {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+      min-height: 28px;
+      color: #fff;
+    }
+
+    /* 底部控制 */
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #b0a086;
+      font-weight: 600;
+      font-size: 0.9rem;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .combo-box {
+      background: #1e150e;
+      padding: 6px 16px;
+      border-radius: 30px;
+      border: 1px solid #5a4a35;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .combo-fire { color: #ff8c00; font-size: 1.2rem; }
+
+    .reset-btn {
+      background: none;
+      border: 1px solid #5a4a35;
+      color: #b0a086;
+      padding: 6px 16px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .reset-btn:hover { background: #1e150e; color: #fff; }
+
+    /* 游戏结束模态框 */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .modal.active { opacity: 1; pointer-events: auto; }
+
+    .modal-content {
+      background: var(--card-bg);
+      padding: 40px;
+      border-radius: 30px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      transform: scale(0.9);
+      transition: transform 0.3s;
+      border: 6px solid #d4a017;
+    }
+    .modal.active .modal-content { transform: scale(1); }
+
+    .modal h2 { font-size: 2rem; color: #3d2e1e; margin-bottom: 10px; }
+    .modal p { font-size: 1.2rem; margin: 10px 0; color: #5a4a35; font-weight: 600; }
+    .modal .score { font-size: 3rem; font-weight: 900; color: #d4a017; margin: 15px 0; text-shadow: 2px 2px 0 #b87c0e; }
+    .modal-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 15px 40px;
+      border-radius: 50px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 20px;
+      box-shadow: 0 6px 0 var(--primary-dark);
+    }
+    .modal-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--primary-dark); }
+
+    /* 移动端适配 */
+    @media (max-width: 600px) {
+      .top-bar { flex-direction: column; align-items: stretch; }
+      .progress-container { margin: 5px 0; }
+      .stats-mini { justify-content: space-around; }
+      .chinese-text { font-size: 1.4rem; }
+      .input-group { flex-direction: column; }
+      .btn { padding: 14px; }
+      .spell-input { font-size: 1.1rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-wrapper">
+  <!-- 顶部信息栏 -->
+  <div class="top-bar">
+    <div class="level-badge" id="levelDisplay">第 1 关</div>
+    <div class="progress-container">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="stats-mini">
+      <span>✅ <span id="correctDisplay">0</span></span>
+      <span>❌ <span id="wrongDisplay">0</span></span>
+      <span>📋 <span id="remainDisplay">0</span></span>
+    </div>
+  </div>
+
+  <!-- 游戏主区域 -->
+  <div class="game-board" id="gameBoard">
+    <div class="mole-card" id="moleCard">
+      <div class="chinese-text" id="chineseText">加载中...</div>
+      <div class="hint-text" id="hintText">提示: 暂无</div>
+      
+      <div class="input-group">
+        <input type="text" class="spell-input" id="spellInput" placeholder="输入英文拼写..." autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button class="btn btn-check" id="checkBtn">✔ 确认</button>
+        <button class="btn btn-skip" id="skipBtn">跳过</button>
+      </div>
+    </div>
+    <div class="feedback-overlay" id="feedbackOverlay"></div>
+    <div class="feedback-text" id="feedbackText"></div>
+  </div>
+
+  <!-- 底部控制 -->
+  <div class="bottom-bar">
+    <div class="combo-box">
+      <span class="combo-fire">🔥</span> 连击: <span id="comboDisplay">0</span>
+    </div>
+    <div>得分: <span id="scoreDisplay" style="color:#ffd700; font-weight:900;">0</span></div>
+    <button class="reset-btn" id="resetBtn">🔄 重新开始</button>
+  </div>
+</div>
+
+<!-- 结算弹窗 -->
+<div class="modal" id="endModal">
+  <div class="modal-content">
+    <h2 id="modalTitle">🎉 通关！</h2>
+    <p>最终得分</p>
+    <div class="score" id="finalScore">0</div>
+    <p id="modalDetail">正确: 0 / 错误: 0</p>
+    <button class="modal-btn" id="modalRestartBtn">再来一次</button>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // 词库：从《第六讲.docx》中提取的所有词组（去重整理）
+  // 包含单词、词组、长句，覆盖Page 1-4
+  // ============================================================
+  const RAW_WORDS = [
+    // Page 1
+    { en: "kick off", zh: "开始，开赛，发起" },
+    { en: "bring back the history", zh: "让历史重现" },
+    { en: "be in full swing", zh: "方兴未艾" },
+    { en: "be listed as a heritage site", zh: "被列为遗址" },
+    { en: "be in elaborate costumes", zh: "穿着精致的服装" },
+    { en: "boast/brag about/of sth.", zh: "吹擂" },
+    { en: "work/serve as", zh: "充当" },
+    { en: "hide/conceal sth. from sb.", zh: "对某人隐藏某物" },
+    { en: "worsen the problem", zh: "使问题更糟" },
+    { en: "opt for sth./opt to do sth.", zh: "选择" },
+    { en: "date back to = date from = be traced back to", zh: "追溯到（3种表达形式）" },
+    { en: "have something/nothing to do with", zh: "与某事有关/无关" },
+    { en: "deindustrialization", zh: "去工业化" },
+    { en: "firm/concrete/solid/conclusive evidence", zh: "坚实的证据" },
+    { en: "a stuffy nose", zh: "塞住的鼻子" },
+    { en: "police force(s)", zh: "警察机构" },
+    { en: "real estate prices", zh: "房地产价格" },
+    { en: "stressful occupations", zh: "压力大的职业" },
+    { en: "high-income people", zh: "高净值人群" },
+    // Page 2
+    { en: "replace ... with ...", zh: "用……替换……" },
+    { en: "itchy or watery eyes", zh: "发痒或流泪的眼睛" },
+    { en: "benefit from", zh: "从…中获利" },
+    { en: "disappearance of manufacturing", zh: "制造业的消失" },
+    { en: "profitable commercial space", zh: "有利可图的商业空间" },
+    { en: "mentoring program", zh: "导师计划" },
+    { en: "residential towers", zh: "住宅楼" },
+    { en: "seek support from other officers", zh: "寻求其他官员的帮助" },
+    { en: "a custom for people to set off fireworks /fire-crackers", zh: "人们燃放烟花/爆竹的习俗" },
+    { en: "hope (that) sb. will do sth.", zh: "希望某人做某事" },
+    { en: "maintain/support the family", zh: "养家糊口" },
+    { en: "people with good manners", zh: "有礼貌的人" },
+    { en: "prefer to do A rather than do B / prefer doing A to doing B / would rather do A than do B / would choose to do A rather than (do) B", zh: "宁愿做A也不做B（4种表达形式）" },
+    { en: "arouse one's sympathy", zh: "唤起同情心" },
+    { en: "maintain good air quality", zh: "保持空气质量良好" },
+    { en: "test-oriented education", zh: "应试教育" },
+    { en: "quality-oriented education", zh: "素质教育" },
+    { en: "It dawned on sb. that...", zh: "某人突然意识到" },
+    { en: "victory is in sight", zh: "看到胜利的曙光" },
+    // Page 3
+    { en: "see the dawn of victory", zh: "看到胜利的曙光（另一表达）" },
+    { en: "at the sight/sound/touch/smell of", zh: "看/听/摸/闻到" },
+    { en: "put/set aside their differences/disagreements/dispute", zh: "放下分歧（尽可能多写几种）" },
+    { en: "rely on", zh: "依赖于" },
+    { en: "be in/out of sight", zh: "在视线内外" },
+    { en: "It is beyond dispute that...", zh: "毋庸置疑" },
+    { en: "at the click of...", zh: "点一下...的瞬间" },
+    { en: "make combined/joint efforts to do sth.", zh: "通力合作做某事" },
+    { en: "must/may/might/can't/couldn't have done", zh: "对过去的推测（一定/可能/不可能）" },
+    { en: "It's such a performance getting the children off to school in the morning.", zh: "早上打发孩子上学可要忙乱一阵子呢。" },
+    { en: "be interrupted by someone else with a strong American accent", zh: "被别人打断有很重的美国口音" },
+    { en: "make an announcement of...", zh: "发了....的公告" },
+    { en: "annual growth rates", zh: "年增长率" },
+    { en: "critical examination", zh: "关键的考试" },
+    { en: "be aggressive in sth./doing sth.", zh: "积极做某事" },
+    { en: "a wide range of amusements", zh: "各种各样的娱乐项目" },
+    { en: "tennis court", zh: "网球场" },
+    // Page 4
+    { en: "professional/amateur", zh: "专业选手/业余选手" },
+    { en: "shopping arcades", zh: "商场" },
+    { en: "make an apology to sb. for...", zh: "为...向某人道歉" },
+    { en: "surgeon/physician/physicist", zh: "外科医生/内科医生/物理学家" },
+    { en: "rescue operation", zh: "救援行动" },
+    { en: "enjoy an annual growth of...", zh: "每年有...的增长" },
+    { en: "continuously/incessantly/uninterruptedly/unceasingly", zh: "连续不断地" },
+    { en: "the chairman of the committee", zh: "委员会主席" },
+    { en: "stay competitive", zh: "立于不败之地" }
+  ];
+
+  // 去重处理
+  const seen = new Set();
+  const WORDS = RAW_WORDS.filter(w => {
+    const key = w.en.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // ============================================================
+  // 游戏状态与配置
+  // ============================================================
+  const CONFIG = {
+    levels: [
+      { name: "第 1 关 · 热身", count: 10, timeLimit: 20, hint: true },      // 简单：有首字母/长度提示，时间充裕
+      { name: "第 2 关 · 进阶", count: 15, timeLimit: 15, hint: false },     // 中等：无提示，时间中等
+      { name: "第 3 关 · 挑战", count: 20, timeLimit: 10, hint: false }      // 困难：无提示，时间紧迫
+    ],
+    baseScore: 100,
+    comboBonus: 20,
+    wrongPenalty: 30
+  };
+
+  // 游戏状态变量
+  let currentLevel = 0;             // 0,1,2
+  let levelWords = [];              // 本关要考的单词
+  let currentIndex = 0;
+  let correctCount = 0;
+  let wrongCount = 0;
+  let combo = 0;
+  let score = 0;
+  let timer = null;
+  let timeLeft = 0;
+  let isLocked = false;            // 防止重复提交
+  let gameActive = false;
+
+  // DOM 元素
+  const els = {
+    levelDisplay: document.getElementById('levelDisplay'),
+    progressFill: document.getElementById('progressFill'),
+    correctDisplay: document.getElementById('correctDisplay'),
+    wrongDisplay: document.getElementById('wrongDisplay'),
+    remainDisplay: document.getElementById('remainDisplay'),
+    chineseText: document.getElementById('chineseText'),
+    hintText: document.getElementById('hintText'),
+    spellInput: document.getElementById('spellInput'),
+    checkBtn: document.getElementById('checkBtn'),
+    skipBtn: document.getElementById('skipBtn'),
+    feedbackText: document.getElementById('feedbackText'),
+    feedbackOverlay: document.getElementById('feedbackOverlay'),
+    comboDisplay: document.getElementById('comboDisplay'),
+    scoreDisplay: document.getElementById('scoreDisplay'),
+    resetBtn: document.getElementById('resetBtn'),
+    endModal: document.getElementById('endModal'),
+    modalTitle: document.getElementById('modalTitle'),
+    finalScore: document.getElementById('finalScore'),
+    modalDetail: document.getElementById('modalDetail'),
+    modalRestartBtn: document.getElementById('modalRestartBtn'),
+    moleCard: document.getElementById('moleCard')
+  };
+
+  // ============================================================
+  // 工具函数
+  // ============================================================
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // 根据难度生成提示
+  function generateHint(word, levelIndex) {
+    if (levelIndex === 0) {
+      // 第1关：显示首字母和长度
+      const en = word.en;
+      const parts = en.split(/([\s\/]+)/);
+      let hint = '';
+      for (let part of parts) {
+        if (/^[\s\/]+$/.test(part)) {
+          hint += part;
+        } else if (part.length > 0) {
+          hint += part[0] + '_'.repeat(part.length - 1);
+        }
+      }
+      return `💡 提示: ${hint}`;
+    } else if (levelIndex === 1) {
+      // 第2关：显示长度
+      return `💡 长度: ${word.en.length} 个字符 (含空格)`;
+    } else {
+      // 第3关：无提示
+      return `💡 挑战模式 · 无提示`;
+    }
+  }
+
+  // 计时器控制
+  function startTimer(seconds) {
+    clearInterval(timer);
+    timeLeft = seconds;
+    updateTimerDisplay();
+    timer = setInterval(() => {
+      timeLeft--;
+      updateTimerDisplay();
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        if (!isLocked && gameActive) {
+          handleSkip(); // 超时算错/跳过
+        }
+      }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    // 可以整合到提示区域或单独显示，这里我们直接反映到输入框边框颜色或者文字
+    if (timeLeft <= 3) {
+      els.hintText.style.color = '#f44336';
+      els.hintText.style.fontWeight = '900';
+    } else {
+      els.hintText.style.color = '#7a6b55';
+      els.hintText.style.fontWeight = '600';
+    }
+    // 在提示文本前加上时间
+    const baseHint = els.hintText.getAttribute('data-base') || els.hintText.innerText;
+    if (!els.hintText.hasAttribute('data-base')) {
+      els.hintText.setAttribute('data-base', els.hintText.innerText);
+    }
+    // 简单处理：如果包含"⏱️"就先移除
+    let text = els.hintText.getAttribute('data-base');
+    els.hintText.innerText = `⏱️ ${timeLeft}s | ${text}`;
+  }
+
+  // 重置计时基准
+  function resetHintBase(hintTextContent) {
+    els.hintText.innerText = hintTextContent;
+    els.hintText.setAttribute('data-base', hintTextContent);
+  }
+
+  // 播放反馈动画
+  function showFeedback(isCorrect, message) {
+    els.feedbackText.innerText = message;
+    els.feedbackText.style.color = isCorrect ? '#4caf50' : '#f44336';
+    
+    // 飘字动画
+    els.feedbackOverlay.innerText = isCorrect ? '✔️' : '❌';
+    els.feedbackOverlay.style.color = isCorrect ? '#4caf50' : '#f44336';
+    els.feedbackOverlay.classList.remove('show');
+    void els.feedbackOverlay.offsetWidth; // 触发重绘
+    els.feedbackOverlay.classList.add('show');
+  }
+
+  // 更新UI统计数据
+  function updateStatsUI() {
+    els.correctDisplay.innerText = correctCount;
+    els.wrongDisplay.innerText = wrongCount;
+    const remaining = levelWords.length - currentIndex;
+    els.remainDisplay.innerText = remaining < 0 ? 0 : remaining;
+    els.comboDisplay.innerText = combo;
+    els.scoreDisplay.innerText = score;
+
+    // 进度条
+    const progress = (currentIndex / levelWords.length) * 100;
+    els.progressFill.style.width = `${progress}%`;
+  }
+
+  // 加载当前题目
+  function loadQuestion() {
+    if (!gameActive) return;
+
+    if (currentIndex >= levelWords.length) {
+      // 本关结束
+      if (currentLevel < CONFIG.levels.length - 1) {
+        // 进入下一关
+        currentLevel++;
+        initLevel(currentLevel);
+      } else {
+        // 通关
+        endGame(true);
+      }
+      return;
+    }
+
+    isLocked = false;
+    const word = levelWords[currentIndex];
+    
+    // 地鼠卡片弹出动画
+    els.moleCard.classList.remove('animate-pop');
+    void els.moleCard.offsetWidth;
+    els.moleCard.classList.add('animate-pop');
+
+    // 显示中文
+    els.chineseText.innerText = word.zh;
+    
+    // 生成并显示提示
+    const hintContent = generateHint(word, currentLevel);
+    resetHintBase(hintContent);
+
+    // 清空输入框并聚焦
+    els.spellInput.value = '';
+    els.spellInput.disabled = false;
+    els.checkBtn.disabled = false;
+    els.skipBtn.disabled = false;
+    els.spellInput.focus();
+
+    // 清除反馈
+    els.feedbackText.innerText = '';
+    els.feedbackOverlay.classList.remove('show');
+
+    // 开始计时
+    const timeLimit = CONFIG.levels[currentLevel].timeLimit;
+    startTimer(timeLimit);
+
+    // 更新统计
+    updateStatsUI();
+  }
+
+  // 检查答案
+  function checkAnswer() {
+    if (isLocked || !gameActive) return;
+    const userAnswer = els.spellInput.value.trim();
+    if (userAnswer === '') {
+      els.feedbackText.innerText = '请输入答案！';
+      els.feedbackText.style.color = '#f44336';
+      return;
+    }
+
+    const word = levelWords[currentIndex];
+    const isCorrect = userAnswer.toLowerCase() === word.en.toLowerCase();
+
+    isLocked = true;
+    clearInterval(timer); // 停止计时
+
+    if (isCorrect) {
+      // 正确
+      correctCount++;
+      combo++;
+      // 连击加分
+      let earned = CONFIG.baseScore + (combo > 1 ? CONFIG.comboBonus * (combo - 1) : 0);
+      // 时间奖励：剩余时间越多加分越多
+      earned += timeLeft * 5;
+      score += earned;
+      
+      els.spellInput.disabled = true;
+      els.checkBtn.disabled = true;
+      els.skipBtn.disabled = true;
+      
+      showFeedback(true, `✅ 正确！ +${earned}分`);
+      
+      // 延迟进入下一题
+      setTimeout(() => {
+        if (!gameActive) return;
+        currentIndex++;
+        loadQuestion();
+      }, 1000);
+    } else {
+      // 错误
+      wrongCount++;
+      combo = 0;
+      score = Math.max(0, score - CONFIG.wrongPenalty);
+      
+      els.spellInput.disabled = true;
+      els.checkBtn.disabled = true;
+      els.skipBtn.disabled = true;
+      
+      showFeedback(false, `❌ 拼写错误，正确答案: ${word.en}`);
+      
+      setTimeout(() => {
+        if (!gameActive) return;
+        currentIndex++;
+        loadQuestion();
+      }, 1800); // 错误时多展示一会正确答案
+    }
+    
+    updateStatsUI();
+  }
+
+  // 跳过 / 超时
+  function handleSkip() {
+    if (isLocked || !gameActive) return;
+    isLocked = true;
+    clearInterval(timer);
+    
+    const word = levelWords[currentIndex];
+    wrongCount++;
+    combo = 0;
+    score = Math.max(0, score - CONFIG.wrongPenalty);
+    
+    els.spellInput.disabled = true;
+    els.checkBtn.disabled = true;
+    els.skipBtn.disabled = true;
+    
+    showFeedback(false, `⏭️ 跳过 / 超时。答案: ${word.en}`);
+    
+    updateStatsUI();
+    
+    setTimeout(() => {
+      if (!gameActive) return;
+      currentIndex++;
+      loadQuestion();
+    }, 1800);
+  }
+
+  // 初始化关卡
+  function initLevel(levelIndex) {
+    currentLevel = levelIndex;
+    const levelConfig = CONFIG.levels[levelIndex];
+    
+    // 从词库中随机抽取指定数量的单词（尽可能不重复，如果词库不够则重复）
+    let pool = [...WORDS];
+    if (levelConfig.count > WORDS.length) {
+      // 如果需要的数量超过词库，打乱后循环取
+      pool = shuffle([...WORDS, ...WORDS, ...WORDS]).slice(0, levelConfig.count);
+    } else {
+      pool = shuffle(pool).slice(0, levelConfig.count);
+    }
+    
+    levelWords = pool;
+    currentIndex = 0;
+    correctCount = 0;
+    wrongCount = 0;
+    combo = 0;
+    // 注意：得分跨关累计，不清零
+    // 如果重新开始游戏，得分在startGame中重置
+    
+    els.levelDisplay.innerText = levelConfig.name;
+    gameActive = true;
+    
+    loadQuestion();
+  }
+
+  // 开始游戏（从头开始）
+  function startGame() {
+    clearInterval(timer);
+    currentLevel = 0;
+    correctCount = 0;
+    wrongCount = 0;
+    combo = 0;
+    score = 0;
+    currentIndex = 0;
+    gameActive = true;
+    els.endModal.classList.remove('active');
+    
+    initLevel(0);
+  }
+
+  // 游戏结束
+  function endGame(isVictory) {
+    gameActive = false;
+    clearInterval(timer);
+    
+    els.modalTitle.innerText = isVictory ? '🎉 恭喜通关！' : '😅 游戏结束';
+    els.finalScore.innerText = score;
+    els.modalDetail.innerText = `总正确: ${correctCount}  |  总错误: ${wrongCount}`;
+    els.endModal.classList.add('active');
+  }
+
+  // ============================================================
+  // 事件绑定
+  // ============================================================
+  els.checkBtn.addEventListener('click', checkAnswer);
+  els.skipBtn.addEventListener('click', handleSkip);
+  els.spellInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      checkAnswer();
+    }
+  });
+
+  els.resetBtn.addEventListener('click', () => {
+    if (confirm('确定要重新开始整个游戏吗？')) {
+      startGame();
+    }
+  });
+
+  els.modalRestartBtn.addEventListener('click', startGame);
+
+  // 初始化游戏
+  startGame();
+
+</script>
+</body>
+</html>
